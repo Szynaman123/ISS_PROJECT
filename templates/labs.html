@@ -1,0 +1,43 @@
+
+{% extends "index.html" %}
+
+{% block content %}
+<div class="header">
+    <h2 style="font-weight: bold;">Projekty z laboratoriów</h2>
+    <br/>
+</div>
+
+
+<div class="list" style="padding-left:200px;">
+    <ul>
+      <li>
+          <a style="font-weight: bold;">
+              Laboratorium 1: modelowanie procesów
+          </a>
+
+          <ul>
+            <li>
+                <a href="{{ url_for('get_no_reg') }}">
+                  napełnianie zbiornika bez regulatora
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('get_p_reg') }}">
+                  napełnianie zbiornika z regulatorem typu PI
+                </a>
+            </li>
+              <li>
+                <a href="{{ url_for('get_mixing') }}">
+                  stężenie składnika przy mieszaniu dwóch substancji bez regulatora
+                </a>
+            </li>
+          </li>
+        </ul>
+      </li>
+    </ul>
+
+</div>
+
+
+{% endblock %}
+
