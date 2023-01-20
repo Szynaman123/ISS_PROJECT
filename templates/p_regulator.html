@@ -28,6 +28,20 @@
                 <input type="number" name="amountInputIn" min="0.0" max="5.0" step="0.1" value="0.0" oninput="this.form.amountRangeIn.value=this.value" />
             </div>
         </div>
+          <div class="col-auto">
+          <div>
+                <label for="dist">Zakłócenie</label><br>
+                <input type="range" name="amountDistRangeIn" id="dist" min="-0.09" max="0.09" step="0.01" value="0.0" oninput="this.form.amountDistInputIn.value=this.value" />
+                <input type="number" name="amountDistInputIn" min="-0.09" max="0.09" step="0.01" value="0.0" oninput="this.form.amountDistRangeIn.value=this.value" />
+            </div>
+        </div>
+                    <div class="col-auto">
+          <div>
+                <label for="dist_time">W której jednostce czasu</label><br>
+                <input type="range" name="amountDistTimeRangeIn" id="dist_time" min="1.0" step="1.0" max="3599.0" value="1" oninput="this.form.amountDistTimeInputIn.value=this.value" />
+                <input type="number" name="amountDistTimeInputIn" min="1.0" step="1.0" max="3599.0" value="1" oninput="this.form.amountDistTimeRangeIn.value=this.value" />
+            </div>
+        </div>
           <div class="col-auto" style="margin-top:30px;">
                <input type = "button" id = "mybutton" value = "Symulacja" />
           </div>
@@ -43,12 +57,16 @@
      $(function() { $("#mybutton").click(function (event) {
          var result = null;
          var hsp = document.getElementById("d_name").value;
+         var dist= document.getElementById("dist").value;
+         var dist_time= document.getElementById("dist_time").value;
          var URL = "/p_regulator_execute";
          $.ajax({
             url: URL,
             type: 'get',
             data: {
-            "hsp":hsp
+            "hsp":hsp,
+            "dist":dist,
+            "dist_time":dist_time
             },
             dataType: 'html',
             async: false,
