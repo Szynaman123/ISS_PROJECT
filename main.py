@@ -22,14 +22,15 @@ nav = Nav()
 nav.register_element('top', topbar)
 
 # CONSTANTS
-T = 360  # [s]
+T = 3600  # [s]
 Tp = 0.1  # [s]
 A = 1.5  # [m]
-B = 0.035  # [m^3/s]
+B = 0.055  # [m^3/s]
 h_min = 0.0  # [m]
-h_max = 5.0  # [m]
+h_max = 15.0  # [m]
 u_min = 0.0  # minimalny przepływ
 u_max = 10.0  # maksymalny przepływ
+q_in_max = 0.1  # maksymalny przepływ
 kp = 0.015  # wzmocnienie
 Ti = 5  # [s]
 N = int(T/Tp) + 1
@@ -45,19 +46,19 @@ q_out = [0.0]
 t = [0.0]
 e_1 = [0.0]
 e_2 = [0.0]
-u_pi_1 = [0.025]
+u_pi_1 = [0.0]
 u_pi_2 = [0.025]
 V = [3.0]
 V_max = A * math.pi * h_max
 V_min = 0.0
-c_1 = [0.91]
-c_2 = [0.12]
-c = [0.5]
-q_in_1 = [0.025]
+c_1 = [0.9]
+c_2 = [0.1]
+c = [0.0]
+q_in_1 = [0.0]
 q_in_2 = [0.025]
 przedzialy_uchyb=[[-1.0,-1.0,-0.5],[-1.0,-0.5,0],[-0.5,0,0.5],[0,0.5,1.0],[0.5,1.0,1.0]]
 przedzialy_c_uchyb=[[-2.0,-2.0,-1.0],[-2.0,-1.0,0],[-1.0,0,1.0],[0,1.0,2.0],[1.0,2.0,2.0]]
-przedzialy=[[0,0,1.25],[0,1.25,2.5],[1.25,2.5,3.75],[2.5,3.75,5.0],[3.75,5.0,5.0]]
+przedzialy=[[0,0,0.0125],[0,0.0125,0.025],[0.0125,0.025,0.0375],[0.025,0.0375,0.05],[0.0375,0.05,0.05]]
 mu_e=[]
 mu_ce=[]
 mu_przedzialy=[]
@@ -69,20 +70,43 @@ table=[ [0, 0, 0, 1, 2],
 
 
 def fuzzy(e,ce):
+    global mu_ce,mu_e,mu_przedzialy
+    mu_e = []
+    mu_ce = []
+    mu_przedzialy = []
     for i in range(len(przedzialy_uchyb)):
         if e >= przedzialy_uchyb[i][0] and e <= przedzialy_uchyb[i][2]:
-            x=(przedzialy_uchyb[i][2]-e)/(przedzialy_uchyb[i][2]-przedzialy_uchyb[i][1])
-            y=(e-przedzialy_uchyb[i+1][0])/(przedzialy_uchyb[i+1][1]-przedzialy_uchyb[i+1][0])
+            if i==0:
+                x=(przedzialy_uchyb[i][2]-e)/(przedzialy_uchyb[i][2]-przedzialy_uchyb[i][1])
+            else:
+                x=max(min((e-przedzialy_uchyb[i][0])/(przedzialy_uchyb[i][1]-przedzialy_uchyb[i][0]),
+                      (przedzialy_uchyb[i][2]-e)/(przedzialy_uchyb[i][2]-przedzialy_uchyb[i][1])),0)
+            if i+1==4:
+                y=(przedzialy_uchyb[i][2]-e)/(przedzialy_uchyb[i][2]-przedzialy_uchyb[i][1])
+            else:
+                y=max(min((e-przedzialy_uchyb[i+1][0])/(przedzialy_uchyb[i+1][1]-przedzialy_uchyb[i+1][0]),
+                      (przedzialy_uchyb[i+1][2]-e)/(przedzialy_uchyb[i+1][2]-przedzialy_uchyb[i+1][1])),0)
+            # x=(przedzialy_uchyb[i][2]-e)/(przedzialy_uchyb[i][2]-przedzialy_uchyb[i][1])
+            # y=(e-przedzialy_uchyb[i+1][0])/(przedzialy_uchyb[i+1][1]-przedzialy_uchyb[i+1][0])
             mu_e.append({"value":x,"index":i})
             mu_e.append({"value":y,"index":i+1})
             break
     for i in range(len(przedzialy_c_uchyb)):
         if ce >= przedzialy_c_uchyb[i][0] and ce <= przedzialy_c_uchyb[i][2]:
-            x=(przedzialy_c_uchyb[i][2]-ce)/(przedzialy_c_uchyb[i][2]-przedzialy_c_uchyb[i][1])
-            y=(ce-przedzialy_c_uchyb[i+1][0])/(przedzialy_c_uchyb[i+1][1]-przedzialy_c_uchyb[i+1][0])
+            if i==0:
+                x=(przedzialy_c_uchyb[i][2]-ce)/(przedzialy_c_uchyb[i][2]-przedzialy_c_uchyb[i][1])
+            else:
+                x=max(min((ce-przedzialy_c_uchyb[i][0])/(przedzialy_c_uchyb[i][1]-przedzialy_c_uchyb[i][0]),
+                      (przedzialy_c_uchyb[i][2]-ce)/(przedzialy_c_uchyb[i][2]-przedzialy_c_uchyb[i][1])),0)
+            if i+1==4:
+                y=(przedzialy_c_uchyb[i][2]-ce)/(przedzialy_c_uchyb[i][2]-przedzialy_c_uchyb[i][1])
+            else:
+                y=max(min((ce-przedzialy_c_uchyb[i+1][0])/(przedzialy_c_uchyb[i+1][1]-przedzialy_c_uchyb[i+1][0]),
+                      (przedzialy_c_uchyb[i+1][2]-ce)/(przedzialy_c_uchyb[i+1][2]-przedzialy_c_uchyb[i+1][1])),0)
             mu_ce.append({"value":x,"index":i})
             mu_ce.append({"value":y,"index":i+1})
             break
+
     r_1 = min(mu_e[0]["value"],mu_ce[0]["value"])
     r_2 = min(mu_e[1]["value"],mu_ce[0]["value"])
     r_3 = min(mu_e[0]["value"],mu_ce[1]["value"])
@@ -99,18 +123,37 @@ def fuzzy(e,ce):
             var=max(mu_przedzialy[i]["value"],mu_przedzialy[i+1]["value"])
             mu_przedzialy[i]["value"]=var
             mu_przedzialy[i+1]["value"]=var
-    max_u=mu_przedzialy[0]
-    for  i in range(len(mu_przedzialy)):
-        if mu_przedzialy[i]["value"]>max_u["value"]:
-            max_u=mu_przedzialy[i]
+    res_list = [i for n, i in enumerate(mu_przedzialy)
+                if i not in mu_przedzialy[n + 1:]]
 
-    y_max=(przedzialy[max_u["index"]][2]-przedzialy[max_u["index"]][1])*(1-max_u["value"])+przedzialy[max_u["index"]][1]
-    y_min=max(przedzialy[max_u["index"]][1]-((przedzialy[max_u["index"]][1]-przedzialy[max_u["index"]][0])*(1-max_u["value"])),0)
-    if max_u["index"]==4:
-        u=y_min
-    else:
-        u=(y_max+y_min)/2
-    return u
+    areas=[]
+    areas_middle_multiply=[]
+    for i in range(len(res_list)):
+        if res_list[i]["index"]==0:
+            g= abs(przedzialy[res_list[i]["index"]][2])-res_list[i]["value"]*abs(przedzialy[res_list[i]["index"]][2]-przedzialy[res_list[i]["index"]][1])
+            area=(res_list[i]["value"]/2)*(przedzialy[res_list[i]["index"]][2]-g)
+        elif res_list[i]["index"]==4:
+            g= przedzialy[res_list[i]["index"]][1]-res_list[i]["value"]*(przedzialy[res_list[i]["index"]][1]-przedzialy[res_list[i]["index"]][0])
+            area=(res_list[i]["value"]/2)*(przedzialy[res_list[i]["index"]][1]-g)
+        else:
+            g1=res_list[i]["value"]*abs(przedzialy[res_list[i]["index"]][1]-przedzialy[res_list[i]["index"]][0])+abs(przedzialy[res_list[i]["index"]][0])
+            g2=abs(przedzialy[res_list[i]["index"]][2])-(res_list[i]["value"]*abs(przedzialy[res_list[i]["index"]][2]-przedzialy[res_list[i]["index"]][1]))
+            g=g2-g1
+        area=(res_list[i]["value"]/2)*(abs(przedzialy[res_list[i]["index"]][2]-przedzialy[res_list[i]["index"]][0])+g)
+        areas.append(area)
+        areas_middle_multiply.append(area*przedzialy[res_list[i]["index"]][1])
+    u=sum(areas_middle_multiply)/sum(areas)
+    # for  i in range(len(res_list)):
+    #     if res_list[i]["value"]>max_u["value"]:
+    #         max_u=res_list[i]
+    #
+    # y_max=(przedzialy[max_u["index"]][2]-przedzialy[max_u["index"]][1])*(1-max_u["value"])+przedzialy[max_u["index"]][1]
+    # y_min=max(przedzialy[max_u["index"]][1]-((przedzialy[max_u["index"]][1]-przedzialy[max_u["index"]][0])*(1-max_u["value"])),0)
+    # if max_u["index"]==4:
+    #     u=y_min
+    # else:
+    #     u=(y_max+y_min)/2
+    return min(u,q_in_max)
 
 
 
@@ -204,11 +247,11 @@ def refresh_tables():
     V = [3.0]
     e = [0.0]
     h = [0.0]
-    c_1 = [0.91]
-    q_in_1 = [0.025]
+    c_1 = [0.92]
+    q_in_1 = [0.0]
     q_in_2 = [0.025]
-    c_2 = [0.12]
-    c = [0.5]
+    c_2 = [0.17]
+    c = [0.0]
     q_in = [0.08]
     q_out = [0.0]
     t = [0.0]
@@ -235,7 +278,6 @@ def p_regulator(hsp,dist,dist_time):
     if dist < 0.0:
         dist_in= False
     refresh_tables()
-    print("do")
     print(dist_time)
     for n in range(1, N):
         if n >= (dist_time*10) and dist != 0.0:
@@ -271,21 +313,24 @@ def mixing(hsp):
     csp=hsp
     print("do")
     for n in range(1, N):
-        print(n)
         t.append(n * Tp)
+        e[0]=csp-c[n-1]
         e.append(csp-c[n-1])
+        wspolczynnik=((csp*0.025)-(0.025*c_2[-1]))/(c_1[-1]-csp)
         ce.append(e[n]-e[n-1])
-        u_pi_1 = reg_pi(u_pi_1, e_1)
-        u_pi_2 = reg_pi(u_pi_2, e_2)
+        # u_pi_1.append(fuzzy(e[n],ce[n]))
+        # u_pi_2 = reg_pi(u_pi_2, e_2)
         V.append(min(max((q_in_1[n - 1] + q_in_2[n - 1] - q_out[n - 1]) * Tp + V[n - 1], V_min), V_max))
-        q_in_1.append(fuzzy(e[n],ce[n]))
+        q_in_1.append(fuzzy(e[n],ce[n])*wspolczynnik/0.025)
         q_in_2.append(q_in_2[n - 1])
         h.append(min(max(Tp * (q_in_1[n - 1] + q_in_2[n - 1] - q_out[n - 1]) / A + h[n - 1], h_min), h_max))
         c.append((1.0 / V[n - 1]) * (q_in_1[n - 1] * (c_1[n - 1] - c[n - 1]) + (q_in_2[n - 1] * (c_2[n - 1] - c[n - 1]))) * Tp + c[n - 1])
         c_1.append(c_1[n-1])
         c_2.append(c_2[n-1])
         q_out.append(B * sqrt(h[n - 1]))
+        print((e[n],ce[n],q_in_1[n]))
     print("finish")
+    print(c[-1])
 def reg_mixing(hsp):
     global U, e, ce, h, q_in, q_out, t, q_in_1, q_in_2, u_pi_1, u_pi_2
     refresh_tables()
@@ -295,6 +340,7 @@ def reg_mixing(hsp):
         t.append(n * Tp)
         e.append(csp-c[n-1])
         ce.append(e[n]-e[n-1])
+        ce[n]=0.01
         u_pi_1 = reg_pi(u_pi_1, e_1)
         u_pi_2 = reg_pi(u_pi_2, e_2)
         V.append(min(max((q_in_1[n - 1] + q_in_2[n - 1] - q_out[n - 1]) * Tp + V[n - 1], V_min), V_max))
@@ -441,4 +487,5 @@ def visualize_M():
 
 
 if __name__ == "__main__":
+    print(fuzzy(-0.2323863964588086,0.0))
     app.run(debug=False)
