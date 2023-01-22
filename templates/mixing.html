@@ -8,7 +8,7 @@
 
 
 <div class="header" style="display: inline-block">
-    <h2 style="font-weight: bold;">Stężenie składnika przy mieszaniu dwóch substancji bez regulatora</h2>
+    <h2 style="font-weight: bold;">Stężenie składnika przy mieszaniu dwóch substancji z regulatorem rozmytym</h2>
     <br/>
 </div>
 
@@ -20,7 +20,22 @@
 
 <div class="form" style="padding-left: 2%;max-width: 62%;">
     <form class = 'card p-3 bg-light'>
-      <div class="form-row">
+<div class="form-row">
+                  <div class="col-auto">
+          <div>
+                <label for="d_2">Stężenie roztworu dopływ 2(%)</label><br>
+                <input type="range" name="amountD2RangeIn" id="d_2" min="0.01" step="0.01" max="0.99" value="0.1" oninput="this.form.amountD2InputIn.value=this.value" />
+                <input type="number" name="amountD2InputIn" min="0.01" max="0.99" step="0.01" value="0.1" oninput="this.form.amountD2RangeIn.value=this.value" />
+            </div>
+        </div>
+                  <div class="col-auto">
+          <div>
+                <label for="d_1">Stężenie roztworu dopływ 1(%)</label><br>
+                <input type="range" name="amountD1RangeIn" id="d_1" min="0.01" step="0.01" max="0.99" value="0.9" oninput="this.form.amountD1InputIn.value=this.value" />
+                <input type="number" name="amountD1InputIn" min="0.01" max="0.99" step="0.01" value="0.9" oninput="this.form.amountD1RangeIn.value=this.value" />
+
+            </div>
+        </div>
         <div class="col-auto">
           <div>
                 <label for="d_name">Wartość zadana(%)</label><br>
@@ -28,11 +43,13 @@
                 <input type="number" name="amountInputIn" min="0.1" max="0.9" step="0.01" value="0.0" oninput="this.form.amountRangeIn.value=this.value" />
             </div>
         </div>
+      </div>
+
           <div class="col-auto" style="margin-top:30px;">
                <input type = "button" id = "mybutton" value = "Symulacja" />
           </div>
 
-      </div>
+
     </form>
 </div>
 
@@ -43,12 +60,16 @@
      $(function() { $("#mybutton").click(function (event) {
          var result = null;
          var hsp = document.getElementById("d_name").value;
+         var d_1= document.getElementById("d_1").value;
+         var d_2= document.getElementById("d_2").value;
          var URL = "/mixing_execute";
          $.ajax({
             url: URL,
             type: 'get',
             data: {
-            "hsp":hsp
+            "hsp":hsp,
+            "d_1":d_1,
+            "d_2":d_2
             },
             dataType: 'html',
             async: false,

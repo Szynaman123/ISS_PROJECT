@@ -39,10 +39,21 @@ N = int(T/Tp) + 1
 # TABLES
 U = [0.0]    # zmienne do zaworu regulacyjnego
 e = [0.0]
+e_comp = [0.0]
 ce = [0.0]
+ce_comp = [0.0]
 h = [0.0]
 q_in = [0.08]
 q_out = [0.0]
+h_comp = [0.0]
+q_out_comp = [0.0]
+t_comp = [0.0]
+V_comp = [3.0]
+c_1_comp = [0.9]
+c_2_comp = [0.1]
+c_comp = [0.0]
+q_in_1_comp = [0.0]
+q_in_2_comp = [0.025]
 t = [0.0]
 e_1 = [0.0]
 e_2 = [0.0]
@@ -52,10 +63,15 @@ V = [3.0]
 V_max = A * math.pi * h_max
 V_min = 0.0
 c_1 = [0.9]
+
 c_2 = [0.1]
+
 c = [0.0]
+
 q_in_1 = [0.0]
+
 q_in_2 = [0.025]
+
 przedzialy_uchyb=[[-1.0,-1.0,-0.5],[-1.0,-0.5,0],[-0.5,0,0.5],[0,0.5,1.0],[0.5,1.0,1.0]]
 przedzialy_c_uchyb=[[-2.0,-2.0,-1.0],[-2.0,-1.0,0],[-1.0,0,1.0],[0,1.0,2.0],[1.0,2.0,2.0]]
 przedzialy=[[0,0,0.0125],[0,0.0125,0.025],[0.0125,0.025,0.0375],[0.025,0.0375,0.05],[0.0375,0.05,0.05]]
@@ -238,7 +254,7 @@ def fuzzy(e,ce):
 # plt.show()
 
 def refresh_tables():
-    global U,e,h,q_in,q_out,t,q_in_1, q_in_2, u_pi_1, u_pi_2, e_1, e_2, V, c_1, c_2, c
+    global U,e,ce,h,q_in,q_out,t,q_in_1, q_in_2, u_pi_1, u_pi_2, e_1, e_2, V, c_1, c_2, c
     U = [0.0]
     e_1 = [0.0]
     e_2 = [0.0]
@@ -246,6 +262,7 @@ def refresh_tables():
     u_pi_2 = [0.025]
     V = [3.0]
     e = [0.0]
+    ce = [0.0]
     h = [0.0]
     c_1 = [0.92]
     q_in_1 = [0.0]
@@ -269,7 +286,7 @@ def no_regulator(hsp):
 
 def reg_pi(reg_list, e_list):
     global U, e, h, q_in, q_out, t
-    reg_list.append(max(min(kp * (e_list[-1] + Tp * sum(e_list) / Ti), u_max), u_min))
+    reg_list.append(max(min(kp * (e_list[-1] + Tp * abs(sum(e_list)) / Ti), u_max), u_min))
     return reg_list
 
 def p_regulator(hsp,dist,dist_time):
@@ -278,7 +295,6 @@ def p_regulator(hsp,dist,dist_time):
     if dist < 0.0:
         dist_in= False
     refresh_tables()
-    print(dist_time)
     for n in range(1, N):
         if n >= (dist_time*10) and dist != 0.0:
             t.append(n * Tp)
@@ -307,50 +323,104 @@ def p_regulator(hsp,dist,dist_time):
 
 
 
-def mixing(hsp):
-    global U, e, h, q_in, q_out, t, q_in_1, q_in_2, u_pi_1, u_pi_2
+def mixing(hsp,d_1,d_2):
+    global U, e,ce,c_1,c_2, h, q_in, q_out, t, q_in_1, q_in_2, u_pi_1, u_pi_2
     refresh_tables()
     csp=hsp
-    print("do")
-    for n in range(1, N):
-        t.append(n * Tp)
-        e[0]=csp-c[n-1]
-        e.append(csp-c[n-1])
-        wspolczynnik=((csp*0.025)-(0.025*c_2[-1]))/(c_1[-1]-csp)
-        ce.append(e[n]-e[n-1])
-        # u_pi_1.append(fuzzy(e[n],ce[n]))
-        # u_pi_2 = reg_pi(u_pi_2, e_2)
-        V.append(min(max((q_in_1[n - 1] + q_in_2[n - 1] - q_out[n - 1]) * Tp + V[n - 1], V_min), V_max))
-        q_in_1.append(fuzzy(e[n],ce[n])*wspolczynnik/0.025)
-        q_in_2.append(q_in_2[n - 1])
-        h.append(min(max(Tp * (q_in_1[n - 1] + q_in_2[n - 1] - q_out[n - 1]) / A + h[n - 1], h_min), h_max))
-        c.append((1.0 / V[n - 1]) * (q_in_1[n - 1] * (c_1[n - 1] - c[n - 1]) + (q_in_2[n - 1] * (c_2[n - 1] - c[n - 1]))) * Tp + c[n - 1])
-        c_1.append(c_1[n-1])
-        c_2.append(c_2[n-1])
-        q_out.append(B * sqrt(h[n - 1]))
-        print((e[n],ce[n],q_in_1[n]))
-    print("finish")
-    print(c[-1])
-def reg_mixing(hsp):
-    global U, e, ce, h, q_in, q_out, t, q_in_1, q_in_2, u_pi_1, u_pi_2
-    refresh_tables()
-    csp=hsp
-    for n in range(1, N):
+    c[0]=d_2
+    e[0]=csp - c[-1]
+    c_1[-1]=d_1
+    c_2[-1]=d_2
 
+    for n in range(1, N):
         t.append(n * Tp)
         e.append(csp-c[n-1])
+        wspolczynnik=((csp*q_in_2[-1])-(q_in_2[-1]*c_2[-1]))/(c_1[-1]-csp)
         ce.append(e[n]-e[n-1])
-        ce[n]=0.01
-        u_pi_1 = reg_pi(u_pi_1, e_1)
-        u_pi_2 = reg_pi(u_pi_2, e_2)
         V.append(min(max((q_in_1[n - 1] + q_in_2[n - 1] - q_out[n - 1]) * Tp + V[n - 1], V_min), V_max))
-        q_in_1.append(q_in_1[n - 1])
-        q_in_2.append(q_in_2[n - 1])
         h.append(min(max(Tp * (q_in_1[n - 1] + q_in_2[n - 1] - q_out[n - 1]) / A + h[n - 1], h_min), h_max))
         c.append((1.0 / V[n - 1]) * (q_in_1[n - 1] * (c_1[n - 1] - c[n - 1]) + (q_in_2[n - 1] * (c_2[n - 1] - c[n - 1]))) * Tp + c[n - 1])
+        q_in_1.append(fuzzy(e[n],ce[n])*wspolczynnik/q_in_2[-1])
+        q_in_2.append(q_in_2[n - 1])
         c_1.append(c_1[n-1])
         c_2.append(c_2[n-1])
         q_out.append(B * sqrt(h[n - 1]))
+def mixing_comp(hsp,d_1,d_2):
+    global e_comp ,ce_comp ,c_1_comp ,c_comp,V_comp,c_2_comp , h_comp,  q_out_comp, t_comp, q_in_1_comp, q_in_2_comp
+
+    h_comp = [0.0]
+    q_out_comp = [0.0]
+    t_comp = [0.0]
+    V_comp = [3.0]
+    c_1_comp = [0.9]
+    c_2_comp = [0.1]
+    ce_comp=[0.0]
+    q_in_1_comp = [0.0]
+    q_in_2_comp = [0.025]
+    csp=hsp
+    c_1_comp[-1] = d_1
+    c_2_comp[-1] = d_2
+    c_comp = [c_2_comp[-1]]
+    e_comp = [csp-c_comp[-1]]
+
+
+
+    for n in range(1, N):
+        t_comp.append(n * Tp)
+
+        e_comp.append(csp-c_comp[n-1])
+        wspolczynnik=((csp*q_in_2_comp[-1])-(q_in_2_comp[-1]*c_2_comp[-1]))/(c_1_comp[-1]-csp)
+        ce_comp.append(e_comp[n]-e_comp[n-1])
+        V_comp.append(min(max((q_in_1_comp[n - 1] + q_in_2_comp[n - 1] - q_out_comp[n - 1]) * Tp + V_comp[n - 1], V_min), V_max))
+        h_comp.append(min(max(Tp * (q_in_1_comp[n - 1] + q_in_2_comp[n - 1] - q_out_comp[n - 1]) / A + h_comp[n - 1], h_min), h_max))
+        c_comp.append((1.0 / V_comp[n - 1]) * (q_in_1_comp[n - 1] * (c_1_comp[n - 1] - c_comp[n - 1]) + (q_in_2_comp[n - 1] * (c_2_comp[n - 1] - c_comp[n - 1]))) * Tp + c_comp[n - 1])
+        fuzzy_res=fuzzy(e_comp[n],ce_comp[n])*wspolczynnik/q_in_2_comp[-1]
+        q_in_1_comp.append(fuzzy_res)
+        q_in_2_comp.append(q_in_2_comp[n - 1])
+        c_1_comp.append(c_1_comp[n-1])
+        c_2_comp.append(c_2_comp[n-1])
+        q_out_comp.append(B * sqrt(h_comp[n - 1]))
+
+def reg_mixing(hsp,dist,dist_time,regulator,d_1,d_2):
+    global U, e,ce,c_1,c_2, h, q_in, q_out, t, q_in_1, q_in_2, u_pi_1, u_pi_2
+    refresh_tables()
+    csp=hsp
+    c[0]=d_2
+    e[0]=csp - c[-1]
+    c_1[-1]=d_1
+    c_2[-1]=d_2
+    for n in range(1, N):
+        if n >= (dist_time*10) and dist != 0.0:
+            t.append(n * Tp)
+            e.append(csp - c[n - 1])
+            ce.append(e[n] - e[n - 1])
+            V.append(min(max((q_in_1[n - 1] + q_in_2[n - 1] - q_out[n - 1]) * Tp + V[n - 1], V_min), V_max))
+            q_in_1 = reg_pi(q_in_1, e)
+            q_in_2.append(q_in_2[n - 1])
+            if regulator==str(1):
+                q_in_1[-1]+=dist
+            if regulator==str(2) and n == (dist_time*10):
+                q_in_2[-1] += dist
+            h.append(min(max(Tp * (q_in_1[n - 1] + q_in_2[n - 1] - q_out[n - 1]) / A + h[n - 1], h_min), h_max))
+            c.append((1.0 / V[n - 1]) * (
+                        q_in_1[n - 1] * (c_1[n - 1] - c[n - 1]) + (q_in_2[n - 1] * (c_2[n - 1] - c[n - 1]))) * Tp + c[
+                         n - 1])
+            c_1.append(c_1[n - 1])
+            c_2.append(c_2[n - 1])
+            q_out.append(B * sqrt(h[n - 1]))
+        else:
+            t.append(n * Tp)
+            e.append(csp-c[n-1])
+            ce.append(e[n]-e[n-1])
+            V.append(min(max((q_in_1[n - 1] + q_in_2[n - 1] - q_out[n - 1]) * Tp + V[n - 1], V_min), V_max))
+            q_in_1=reg_pi(q_in_1,e)
+            q_in_2.append(q_in_2[n - 1])
+            h.append(min(max(Tp * (q_in_1[n - 1] + q_in_2[n - 1] - q_out[n - 1]) / A + h[n - 1], h_min), h_max))
+            c.append((1.0 / V[n - 1]) * (q_in_1[n - 1] * (c_1[n - 1] - c[n - 1]) + (q_in_2[n - 1] * (c_2[n - 1] - c[n - 1]))) * Tp + c[n - 1])
+            c_1.append(c_1[n-1])
+            c_2.append(c_2[n-1])
+            q_out.append(B * sqrt(h[n - 1]))
+
 
 app = Flask(__name__)
 
@@ -371,7 +441,28 @@ def p_regulator_execute():
 @app.route('/mixing_execute',methods=['GET'])
 def mixing_execute():
     hsp = request.args.get('hsp')
-    mixing(float(hsp))
+    d_1 = request.args.get('d_1')
+    d_2 = request.args.get('d_2')
+    mixing(float(hsp),float(d_1),float(d_2))
+    return ("nothing")
+@app.route('/reg_mixing_execute',methods=['GET'])
+def reg_mixing_execute():
+    hsp = request.args.get('hsp')
+    dist = request.args.get('dist')
+    dist_time = request.args.get('dist_time')
+    regulator = request.args.get('regulator')
+    d_1 = request.args.get('d_1')
+    d_2 = request.args.get('d_2')
+    reg_mixing(float(hsp),float(dist),int(dist_time),regulator,float(d_1),float(d_2))
+    return ("nothing")
+
+@app.route('/comparition_execute',methods=['GET'])
+def comparition_execute():
+    hsp = request.args.get('hsp')
+    d_1 = request.args.get('d_1')
+    d_2 = request.args.get('d_2')
+    reg_mixing(float(hsp),0.0,1,"1",float(d_1),float(d_2))
+    mixing_comp(float(hsp), float(d_1), float(d_2))
     return ("nothing")
 
 
@@ -392,11 +483,17 @@ def get_no_reg():
 def get_mixing():
     return (render_template('mixing.html'))
 
-
+@app.route('/reg_mixing', methods=['GET'])
+def get_reg_mixing():
+    return (render_template('reg_mixing.html'))
 
 @app.route('/p_reg', methods=['GET'])
 def get_p_reg():
     return (render_template('p_regulator.html'))
+
+@app.route('/comparition', methods=['GET'])
+def get_comparition():
+    return (render_template('comparition.html'))
 
 
 nav.init_app(app)
@@ -466,6 +563,7 @@ def visualize_M():
     e_plot = pd.DataFrame({"Wartość uchybu": e, "Czas": t})
     c_plot = pd.DataFrame({"Stężenie składnika": c, "Czas": t})
     v_plot = pd.DataFrame({"Objętość": V, "Czas": t})
+    ce_plot = pd.DataFrame({"Zmiana uchybu": ce, "Czas": t})
     fig, ax = plt.subplots(nrows=4, ncols=2, figsize=(12,8))
     h_sns=sns.lineplot(x = "Czas", y = "Wysokość cieczy w zbiorniku", data=h_plot.sample(1000) , ax=ax[0,0], color='r')
     h_sns.set_yticks(range(0,6))
@@ -476,6 +574,37 @@ def visualize_M():
     o_sns=sns.lineplot(x = "Czas", y = "Natężenie odpływu", data=o_plot.sample(1000),  ax=ax[2,1], color='b')
     o_sns.set_yticks(np.arange(0.0,0.12,0.02))
     e_sns=sns.lineplot(x = "Czas", y = "Wartość uchybu", data=e_plot.sample(1000), ax=ax[3,0], color='g')
+    ce_sns = sns.lineplot(x="Czas", y="Zmiana uchybu", data=ce_plot.sample(1000), ax=ax[3, 1], color='g')
+    fig.tight_layout()
+
+    canvas = FigureCanvas(fig)
+    img = io.BytesIO()
+    fig.savefig("static/plot.png")
+    # img.seek(0)
+
+    return "success"
+@app.route('/visualize_RM')
+def visualize_RM():
+    global U, e, h, q_in, q_out, t
+    # no_regulator()
+    sns.set_theme(style="darkgrid")
+    h_plot = pd.DataFrame({"Wysokość cieczy w zbiorniku": h, "Czas": t})
+    i_plot_1 = pd.DataFrame({"Wartość dopływu 1": q_in_1, "Czas": t})
+    i_plot_2 = pd.DataFrame({"Wartość dopływu 2": q_in_2, "Czas": t})
+    o_plot = pd.DataFrame({"Natężenie odpływu": q_out, "Czas": t})
+    e_plot = pd.DataFrame({"Wartość uchybu": e, "Czas": t})
+    c_plot = pd.DataFrame({"Stężenie składnika": c, "Czas": t})
+    v_plot = pd.DataFrame({"Objętość": V, "Czas": t})
+    ce_plot = pd.DataFrame({"Zmiana uchybu": ce, "Czas": t})
+    fig, ax = plt.subplots(nrows=4, ncols=2, figsize=(12,8))
+    h_sns=sns.lineplot(x = "Czas", y = "Wysokość cieczy w zbiorniku", data=h_plot.sample(1000) , ax=ax[0,0], color='r')
+    sns.lineplot(x = "Czas", y = "Wartość dopływu 1", data=i_plot_1.sample(1000), ax=ax[0,1] , color='y')
+    sns.lineplot(x = "Czas", y = "Wartość dopływu 2", data=i_plot_2.sample(1000), ax=ax[1,0] , color='y')
+    sns.lineplot(x = "Czas", y = "Stężenie składnika", data=c_plot.sample(1000), ax=ax[1,1] , color='y')
+    sns.lineplot(x = "Czas", y = "Objętość", data=v_plot.sample(1000), ax=ax[2,0] , color='y')
+    o_sns=sns.lineplot(x = "Czas", y = "Natężenie odpływu", data=o_plot.sample(1000),  ax=ax[2,1], color='b')
+    e_sns=sns.lineplot(x = "Czas", y = "Wartość uchybu", data=e_plot.sample(1000), ax=ax[3,0], color='g')
+    ce_sns = sns.lineplot(x="Czas", y="Zmiana uchybu", data=ce_plot.sample(1000), ax=ax[3, 1], color='g')
     fig.tight_layout()
 
     canvas = FigureCanvas(fig)
@@ -485,7 +614,50 @@ def visualize_M():
 
     return "success"
 
+@app.route('/visualize_C')
+def visualize_C():
+    global U, e, h, q_in, q_out, t, e_comp ,ce_comp ,c_1_comp ,c_comp,V_comp,c_2_comp , h_comp,  q_out_comp, t_comp, q_in_1_comp, q_in_2_comp
+    # no_regulator()
+    sns.set_theme(style="darkgrid")
+    i_plot_1 = pd.DataFrame({"PID": q_in_1,"Fuzzy": q_in_1_comp, "Czas": t})
+    e_plot = pd.DataFrame({"PID": e, "Fuzzy": e_comp ,"Czas": t})
+    o_plot = pd.DataFrame({"PID": q_out, "Fuzzy": q_out_comp ,"Czas": t})
+    c_plot = pd.DataFrame({"PID": c, "Fuzzy": c_comp ,"Czas": t})
+    v_plot = pd.DataFrame({"PID": V, "Fuzzy": V_comp ,"Czas": t})
+    ce_plot = pd.DataFrame({"PID": ce, "Fuzzy": ce_comp ,"Czas": t})
+    fig, ax = plt.subplots(nrows=3, ncols=2, figsize=(20, 12))
+    ax1=sns.lineplot(x='Czas', y='value', hue='variable',
+             data=pd.melt(i_plot_1.sample(3600), ['Czas']), ax=ax[0, 0])
+    ax1.set(ylabel='Wartość dopływu')
+    ax1.get_legend().set_title("Regulator")
+    ax2 = sns.lineplot(x='Czas', y='value', hue='variable',
+                       data=pd.melt(c_plot.sample(3600), ['Czas']), ax=ax[0, 1])
+    ax2.set(ylabel='Stężenie składnika')
+    ax2.get_legend().set_title("Regulator")
+    ax3 = sns.lineplot(x='Czas', y='value', hue='variable',
+                       data=pd.melt(v_plot.sample(3600), ['Czas']), ax=ax[1, 0])
+    ax3.set(ylabel='Objętość cieczy')
+    ax3.get_legend().set_title("Regulator")
+    ax4 = sns.lineplot(x='Czas', y='value', hue='variable',
+                       data=pd.melt(o_plot.sample(3600), ['Czas']), ax=ax[1, 1])
+    ax4.set(ylabel='Wartość odpływu')
+    ax4.get_legend().set_title("Regulator")
+    ax5 = sns.lineplot(x='Czas', y='value', hue='variable',
+                       data=pd.melt(e_plot.sample(3600), ['Czas']), ax=ax[2, 0])
+    ax5.set(ylabel='Wartość uchybu')
+    ax5.get_legend().set_title("Regulator")
+    ax6 = sns.lineplot(x='Czas', y='value', hue='variable',
+                       data=pd.melt(ce_plot.sample(3600), ['Czas']), ax=ax[2, 1])
+    ax6.set(ylabel='Zmiana uchybu')
+    ax6.get_legend().set_title("Regulator")
+    fig.tight_layout()
+
+    canvas = FigureCanvas(fig)
+    img = io.BytesIO()
+    fig.savefig("static/plot.png")
+    # img.seek(0)
+
+    return "success"
 
 if __name__ == "__main__":
-    print(fuzzy(-0.2323863964588086,0.0))
     app.run(debug=False)

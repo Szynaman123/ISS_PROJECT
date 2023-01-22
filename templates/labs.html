@@ -12,23 +12,33 @@
     <ul>
       <li>
           <a style="font-weight: bold;">
-              Laboratorium 1: modelowanie procesów
+              Symulacje regulatorów
           </a>
 
           <ul>
             <li>
                 <a href="{{ url_for('get_no_reg') }}">
-                  napełnianie zbiornika bez regulatora
+                  Napełnianie zbiornika bez regulatora
                 </a>
             </li>
             <li>
                 <a href="{{ url_for('get_p_reg') }}">
-                  napełnianie zbiornika z regulatorem typu PI
+                  Napełnianie zbiornika z regulatorem typu PI
                 </a>
             </li>
               <li>
                 <a href="{{ url_for('get_mixing') }}">
-                  stężenie składnika przy mieszaniu dwóch substancji bez regulatora
+                  Stężenie składnika przy mieszaniu dwóch substancji z regulatorem rozmytym
+                </a>
+            </li>
+              <li>
+                <a href="{{ url_for('get_reg_mixing') }}">
+                  Stężenie składnika przy mieszaniu dwóch substancji z regulatorem PID
+                </a>
+            </li>
+                            <li>
+                <a href="{{ url_for('get_comparition') }}">
+                  Porównanie regulatora PID i rozmytego
                 </a>
             </li>
           </li>
